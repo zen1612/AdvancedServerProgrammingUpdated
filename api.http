@@ -1,0 +1,46 @@
+@host = http://localhost:8080
+
+### Create room: 201 (use returned id below)
+POST {{host}}/api/rooms
+Content-Type: application/json
+
+{"name":"Study Room A","location":"Building A, floor 2","capacity":8}
+
+### List / filter rooms: 200
+GET {{host}}/api/rooms?minCapacity=5&keyword=study
+
+### Find room: 200
+GET {{host}}/api/rooms/1
+
+### Replace room: 200
+PUT {{host}}/api/rooms/1
+Content-Type: application/json
+
+{"name":"Study Room A","location":"Building A, floor 2","capacity":10}
+
+### Invalid capacity: 400
+POST {{host}}/api/rooms
+Content-Type: application/json
+
+{"name":"Too large","location":"Building B","capacity":21}
+
+### Reserve room: 201 (repeating this gives 409)
+POST {{host}}/api/reservations
+Content-Type: application/json
+
+{"roomId":1,"reservedBy":"Zen","startTime":"2026-11-20T10:00:00","endTime":"2026-11-20T11:00:00"}
+
+### List reservations: 200
+GET {{host}}/api/rooms/1/reservations
+
+### Invalid time range: 400
+POST {{host}}/api/reservations
+Content-Type: application/json
+
+{"roomId":1,"reservedBy":"Zen","startTime":"2026-11-20T12:00:00","endTime":"2026-11-20T11:00:00"}
+
+### Delete reservation: 204
+DELETE {{host}}/api/reservations/1
+
+### Delete room: 204 (409 if reservations still exist)
+DELETE {{host}}/api/rooms/1
