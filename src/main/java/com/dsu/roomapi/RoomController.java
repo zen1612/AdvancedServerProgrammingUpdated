@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -34,7 +35,7 @@ public class RoomController {
     }
 
     @PostMapping
-    public ResponseEntity<RoomResponse> create(@RequestBody RoomCreateRequest request) {
+    public ResponseEntity<RoomResponse> create(@Valid @RequestBody RoomCreateRequest request) {
         try {
             Room room = roomService.create(request.name(), request.capacity());
             return ResponseEntity.created(URI.create("/api/rooms/" + room.getId()))
@@ -45,7 +46,7 @@ public class RoomController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RoomResponse> replace(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
+    public ResponseEntity<RoomResponse> replace(@PathVariable Long id, @Valid @RequestBody RoomCreateRequest request) {
         try {
             Room room = roomService.update(id, request.name(), request.capacity());
             return ResponseEntity.ok(RoomResponse.from(room));
