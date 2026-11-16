@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -58,5 +59,22 @@ public class ApiExceptionHandler {
         log.error("Unexpected error on {} {}", request.getMethod(), request.getRequestURI(), e);
         return respond(HttpStatus.INTERNAL_SERVER_ERROR,
                 "unexpected server error", request, List.of());
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiError> conflict(ConflictException e, HttpServletRequest request) {
+        return respond(HttpStatus.CONFLICT, e.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> invalidArgument(IllegalArgumentException e, HttpServletRequest request) {
+        return respond(HttpStatus.BAD_REQUEST, e.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> unreadableBody(
+            HttpMessageNotReadableException e, HttpServletRequest request) {
+        return respond(HttpStatus.BAD_REQUEST,
+                "request body is missing or is not valid JSON", request, List.of());
     }
 }
