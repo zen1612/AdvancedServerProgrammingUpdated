@@ -19,43 +19,36 @@ public class RoomController {
     }
 
     @GetMapping
-    public List<Room> list(
-            @RequestParam(required = false) Integer minCapacity,
-            @RequestParam(defaultValue = "") String keyword) {
-        return roomService.search(minCapacity, keyword);
+    public List<RoomResponse> list(@RequestParam(required = false) Integer minCapacity,
+                                   @RequestParam(defaultValue = "") String keyword) {
+        return roomService.search(minCapacity, keyword).stream()
+                .map(RoomResponse::from)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Room> findOne(@PathVariable Long id) {
+    public ResponseEntity<RoomResponse> findOne(@PathVariable Long id) {
         return roomService.findById(id)
-                .map(ResponseEntity::ok)
+                .map(room -> ResponseEntity.ok(RoomResponse.from(room)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Room> create(
-            @RequestBody RoomCreateRequest request) {
+    public ResponseEntity<RoomResponse> create(@RequestBody RoomCreateRequest request) {
         try {
-            Room room = roomService.create(
-                    request.name(), request.capacity());
-
-            return ResponseEntity
-                    .created(URI.create("/api/rooms/" + room.getId()))
-                    .body(room);
+            Room room = roomService.create(request.name(), request.capacity());
+            return ResponseEntity.created(URI.create("/api/rooms/" + room.getId()))
+                    .body(RoomResponse.from(room));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Room> replace(
-            @PathVariable Long id,
-            @RequestBody RoomCreateRequest request) {
+    public ResponseEntity<RoomResponse> replace(@PathVariable Long id, @RequestBody RoomCreateRequest request) {
         try {
-            return roomService.replace(
-                            id, request.name(), request.capacity())
-                    .map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+            Room room = roomService.update(id, request.name(), request.capacity());
+            return ResponseEntity.ok(RoomResponse.from(room));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
