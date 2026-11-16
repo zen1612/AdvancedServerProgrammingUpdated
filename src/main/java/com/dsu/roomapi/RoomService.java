@@ -24,12 +24,12 @@ public class RoomService {
     }
 
     public Room create(String name, int capacity) {
-        validate(name, capacity);
+        checkCapacity(capacity);
         return roomRepository.save(new Room(null, name, capacity));
     }
 
     public Optional<Room> replace(Long id, String name, int capacity) {
-        validate(name, capacity);
+        checkCapacity(capacity);
         return roomRepository.findById(id)
                 .map(existing -> roomRepository.save(new Room(id, name, capacity)));
     }
@@ -42,9 +42,8 @@ public class RoomService {
         return true;
     }
 
-    private void validate(String name, int capacity) {
-        if (name == null || name.isBlank() || name.length() > 100) throw new IllegalArgumentException("Room name must contain 1–100 characters");
-        if (capacity < 1 || capacity > 20) throw new IllegalArgumentException("Capacity must be 1–20");
+    private void checkCapacity(int capacity) {
+        if (capacity < 1 || capacity > 20) throw new IllegalArgumentException("Capacity must be 1 and 20");
     }
 
     public int count() {
