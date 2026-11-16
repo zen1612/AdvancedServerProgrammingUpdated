@@ -12,5 +12,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             Long roomId, java.time.LocalDateTime endTime, java.time.LocalDateTime startTime);
 
     boolean existsByRoomId(Long roomId);
+
+    List<Reservation> findByReservedByOrderByStartTime(String reservedBy);
 }
 

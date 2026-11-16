@@ -1,49 +1,97 @@
 package com.dsu.roomapi;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import static org.springframework.http.HttpStatus.*;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
-@Transactional
 public class ReservationService {
-    private final ReservationRepository reservations;
-    private final RoomRepository rooms;
 
-    public ReservationService(ReservationRepository reservations, RoomRepository rooms) {
-        this.reservations = reservations;
-        this.rooms = rooms;
+    private final ReservationRepository reservationRepository;
+    private final RoomRepository roomRepository;
+
+    public ReservationService(
+            ReservationRepository reservationRepository,
+            RoomRepository roomRepository) {
+        this.reservationRepository = reservationRepository;
+        this.roomRepository = roomRepository;
+    }
+
+    // empty = no such room (404)
+    public Optional<List<Reservation>> findByRoom(Long roomId) {
+        if (!roomRepository.existsById(roomId)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(reservationRepository
+                .findByRoomIdOrderByStartTime(roomId));
+    }
+
+    @Transactional
+    public Optional<Reservation> create(
+            Long roomId,
+            String reservedBy,
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
+        checkRequest(reservedBy, startTime, endTime); //400
+        Optional<Room> room = roomRepository.findById(roomId);
+        if (room.isEmpty()) {
+            return Optional.empty(); //404
+        }
+        return Optional.of(reservationRepository.save(
+                new Reservation(
+                        null,
+                        room.get(),
+                        reservedBy,
+                        startTime,
+                        endTime
+                )
+        ));
+    }
+
+    private void checkRequest(
+            String reservedBy,
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
+
+        if (reservedBy == null) {
+            throw new IllegalArgumentException(
+                    "reservedBy is required and must be at most 50 characters"
+            );
+        }
+
+        if (startTime == null
+                || endTime == null
+                || !startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException(
+                    "startTime must be before endTime"
+            );
+        }
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        NOT_FOUND,
+                        "Reservation not found"
+                ));
+
+        reservationRepository.delete(reservation);
     }
 
     @Transactional(readOnly = true)
-    public List<ReservationResponse> findByRoom(Long roomId) {
-        if (!rooms.existsById(roomId)) throw new ResponseStatusException(NOT_FOUND, "Room not found");
-        return reservations.findByRoomIdOrderByStartTime(roomId).stream()
-                .map(ReservationResponse::from).toList();
-    }
-
-    public ReservationResponse create(ReservationCreateRequest request) {
-        if (request.roomId() == null || request.reservedBy() == null || request.reservedBy().isBlank() || request.reservedBy().length() > 50
-                || request.startTime() == null || request.endTime() == null
-                || !request.endTime().isAfter(request.startTime())) {
-            throw new ResponseStatusException(BAD_REQUEST, "Room, name and valid start/end times are required");
-        }
-        // Serialize bookings for the same room so concurrent requests cannot double-book it.
-        Room room = rooms.findForReservation(request.roomId())
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Room not found"));
-        if (reservations.existsByRoomIdAndStartTimeLessThanAndEndTimeGreaterThan(
-                room.getId(), request.endTime(), request.startTime())) {
-            throw new ResponseStatusException(CONFLICT, "Room is already reserved for this time");
-        }
-        return ReservationResponse.from(reservations.save(new Reservation(null, room,
-                request.reservedBy(), request.startTime(), request.endTime())));
-    }
-
-    public void delete(Long id) {
-        Reservation reservation = reservations.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Reservation not found"));
-        reservations.delete(reservation);
+    public List<ReservationResponse> findByReservedBy(String reservedBy) {
+        return reservationRepository
+                .findByReservedByOrderByStartTime(reservedBy)
+                .stream()
+                .map(ReservationResponse::from)
+                .toList();
     }
 }
