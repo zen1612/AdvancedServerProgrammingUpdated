@@ -12,8 +12,12 @@ import org.springframework.stereotype.Service;
 public class RoomService {
 
     private final RoomRepository roomRepository;
+    private final ReservationRepository reservationRepository;
 
-    public RoomService(RoomRepository roomRepository) {this.roomRepository = roomRepository; }
+    public RoomService(RoomRepository roomRepository, ReservationRepository reservationRepository) {
+        this.roomRepository = roomRepository;
+        this.reservationRepository = reservationRepository;
+    }
 
     public List<Room> search(Integer capacity, String keyword) {
         if (capacity == null){
@@ -39,12 +43,13 @@ public class RoomService {
         return room;
     }
 
-    public boolean delete(Long id){
-        if (!roomRepository.existsById(id)) {
-            return false;
+    @Transactional
+    public void delete(Long id) {
+        Room room = get(id);
+        if (reservationRepository.existsByRoomId(id)) {
+            throw new ConflictException("room " + id + " has reservations");
         }
-        roomRepository.deleteById(id);
-        return true;
+        roomRepository.delete(room);
     }
 
     private void checkCapacity(int capacity) {
@@ -57,7 +62,7 @@ public class RoomService {
 
     public Room get(Long id) {
         return roomRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "room " + id + " not found"));
+                .orElseThrow(() -> new NotFoundException("room " + id + " not found"));
     }
 
 }
