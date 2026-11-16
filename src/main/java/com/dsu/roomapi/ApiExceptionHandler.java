@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.ErrorResponse;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -29,6 +30,13 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> notFound(
             NotFoundException e, HttpServletRequest request) {
         return respond(HttpStatus.NOT_FOUND, e.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> wrongType(
+            MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        return respond(HttpStatus.BAD_REQUEST,
+                "'" + e.getName() + "' has the wrong type", request, List.of());
     }
 
 
