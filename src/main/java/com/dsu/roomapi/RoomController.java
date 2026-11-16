@@ -1,19 +1,10 @@
 package com.dsu.roomapi;
 
 import java.net.URI;
-import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -26,12 +17,12 @@ public class RoomController {
     }
 
     @GetMapping
-    public List<Room> list(@RequestParam(required = false) Integer minCapacity,
-                           @RequestParam(defaultValue = "") String keyword) {
+    public List<Room> list(
+            @RequestParam(required = false) Integer minCapacity,
+            @RequestParam(defaultValue = "") String keyword) {
         return roomService.search(minCapacity, keyword);
     }
 
-    @Operation(summary = "Find a room by ID")
     @GetMapping("/{id}")
     public ResponseEntity<Room> findOne(@PathVariable Long id) {
         return roomService.findById(id)
@@ -39,11 +30,13 @@ public class RoomController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @Operation(summary = "Create a room (capacity 1–20)")
     @PostMapping
-    public ResponseEntity<Room> create(@RequestBody RoomCreateRequest request) {
+    public ResponseEntity<Room> create(
+            @RequestBody RoomCreateRequest request) {
         try {
-            Room room = roomService.create(request.name(), request.capacity());
+            Room room = roomService.create(
+                    request.name(), request.capacity());
+
             return ResponseEntity
                     .created(URI.create("/api/rooms/" + room.getId()))
                     .body(room);
@@ -53,10 +46,12 @@ public class RoomController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Room> replace(@PathVariable Long id,
-                                             @RequestBody RoomCreateRequest request) {
+    public ResponseEntity<Room> replace(
+            @PathVariable Long id,
+            @RequestBody RoomCreateRequest request) {
         try {
-            return roomService.replace(id, request.name(), request.capacity())
+            return roomService.replace(
+                            id, request.name(), request.capacity())
                     .map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.notFound().build());
         } catch (IllegalArgumentException e) {
