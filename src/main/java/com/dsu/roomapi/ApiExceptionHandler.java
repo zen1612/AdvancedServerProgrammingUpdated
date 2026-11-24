@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.BadCredentialsException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -76,5 +78,15 @@ public class ApiExceptionHandler {
             HttpMessageNotReadableException e, HttpServletRequest request) {
         return respond(HttpStatus.BAD_REQUEST,
                 "request body is missing or is not valid JSON", request, List.of());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> unauthorized(
+            AuthenticationException e, HttpServletRequest request) {
+        String message = "login required";
+        if (e instanceof BadCredentialsException) {
+            message = "wrong username or password";
+        }
+        return respond(HttpStatus.UNAUTHORIZED, message, request, List.of());
     }
 }
